@@ -291,6 +291,10 @@ public class BluetoothLePlugin extends CordovaPlugin {
   //Client Configuration UUID for notifying/indicating
   private final UUID clientConfigurationDescriptorUuid = UUID.fromString("00002902-0000-1000-8000-00805F9B34FB");
 
+  private int indexFileCounter;
+  private int bytesCount = 0;
+  private int headerCount = 0;
+
   public BluetoothLePlugin() {
 
     if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.LOLLIPOP) {
@@ -4042,13 +4046,48 @@ public class BluetoothLePlugin extends CordovaPlugin {
       }
 
       JSONObject returnObj = new JSONObject();
+      byte[] data = characteristic.getValue();
 
       addDevice(returnObj, device);
 
       addCharacteristic(returnObj, characteristic);
 
       addProperty(returnObj, keyStatus, statusSubscribedResult);
-      addPropertyBytes(returnObj, keyValue, characteristic.getValue());
+      addPropertyBytes(returnObj, keyValue, data);
+
+        
+
+      //start to add header
+      if (data[0] == 2 && data[1] == 3) {
+          indexFileCounter = 0;
+
+          bytesCount |= (data[5] & 0xFF) << 0;
+          bytesCount |= (data[6] & 0xFF) << 8;
+          bytesCount |= (data[7] & 0xFF) << 16;
+          bytesCount |= (data[8] & 0xFF) << 24;
+      } else if (bytesCount != 0 && data[0] == 3) {
+          int packageLength = 0;
+          packageLength |= (data[2] & 0xFF) << 0;
+          packageLength |= (data[3] & 0xFF) << 8;
+          indexFileCounter += packageLength;
+      }
+
+      if (indexFileCounter < bytesCount) {
+          //add header with indexFileCounter
+          addProperty(returnObj, "index", headerCount);
+          Log.d("index: ", String.valueOf(headerCount));
+          Log.d("count: ", String.valueOf(indexFileCounter));
+          headerCount++;
+      } else if (indexFileCounter != 0 && bytesCount != 0 &&  indexFileCounter == bytesCount) {
+          addProperty(returnObj, "index", headerCount);
+          addProperty(returnObj, "lastIndex", headerCount);
+          indexFileCounter = 0;
+          bytesCount = 0;
+          headerCount = 0;
+          System.out.println("Stop adding header");
+      }
+
+      System.out.println(Arrays.toString(data));
 
       //Return the characteristic value
       PluginResult result = new PluginResult(PluginResult.Status.OK, returnObj);
