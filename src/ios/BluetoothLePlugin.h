@@ -15,6 +15,10 @@
   int requestId;
   NSMutableDictionary* requestsHash;
   NSMutableDictionary* servicesHash;
+
+  int indexFileCounter;
+  int bytesCount;
+  int headerCount;
 }
 
 - (void)initialize:(CDVInvokedUrlCommand *)command;

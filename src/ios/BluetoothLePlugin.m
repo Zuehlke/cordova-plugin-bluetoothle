@@ -146,6 +146,8 @@ NSString *const operationWrite = @"write";
 - (void)initializePeripheral:(CDVInvokedUrlCommand *)command {
   initPeripheralCallback = command.callbackId;
 
+  bytesCount = 0;
+  headerCount = 0;
   requestId = 0;
   requestsHash = [[NSMutableDictionary alloc] init];
   servicesHash = [[NSMutableDictionary alloc] init];
@@ -1504,6 +1506,38 @@ NSString *const operationWrite = @"write";
     [self addCharacteristic:characteristic :returnObj];
 
     [self addValue:value toDictionary:returnObj];
+
+    const char* bytes = (const char*)value.bytes;
+      
+     //start to add header for BLOCK_TRANSFER_START [2, 3, xx, xx, 1, yy, yy, yy, yy]
+    if (bytes[0] == 2 && bytes[1] == 3) {
+        indexFileCounter = 0;
+
+         //calculating length of the 4 yy bytes
+        bytesCount |= (bytes[5] & 0xFF) << 0;
+        bytesCount |= (bytes[6] & 0xFF) << 8;
+        bytesCount |= (bytes[7] & 0xFF) << 16;
+        bytesCount |= (bytes[8] & 0xFF) << 24;
+    } else if (bytesCount != 0 && bytes[0] == 3) {
+       //BLOCK_TRANSFER_DATA starts with 3: [3, 3, xx, xx, data...]
+        int packageLength = 0;
+        packageLength |= (bytes[2] & 0xFF) << 0;
+        packageLength |= (bytes[3] & 0xFF) << 8;
+        indexFileCounter += packageLength;
+    }
+
+    if (indexFileCounter < bytesCount) {
+        //add header with indexFileCounte
+        [returnObj setValue:[NSNumber numberWithInteger:headerCount] forKey:@"index"];
+        headerCount++;  
+    } else if (indexFileCounter != 0 && bytesCount != 0 &&  indexFileCounter == bytesCount) {
+        [returnObj setValue:[NSNumber numberWithInteger:headerCount] forKey:@"index"];
+        [returnObj setValue:[NSNumber numberWithInteger:headerCount] forKey:@"lastIndex"];
+        indexFileCounter = 0;
+        bytesCount = 0;
+        headerCount = 0;
+    }
+
 
     [returnObj setValue:statusWritten forKey:keyStatus];
 

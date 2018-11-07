@@ -81,6 +81,10 @@ public class BluetoothLePlugin extends CordovaPlugin {
   //Store bonds
   private HashMap<String, CallbackContext> bonds = new HashMap<String, CallbackContext>();
 
+  private int indexFileCounter;
+  private int bytesCount = 0;
+  private int headerCount = 0;
+
   //Discovery related variables
   private final int STATE_UNDISCOVERED = 0;
   private final int STATE_DISCOVERING = 1;
@@ -290,10 +294,6 @@ public class BluetoothLePlugin extends CordovaPlugin {
 
   //Client Configuration UUID for notifying/indicating
   private final UUID clientConfigurationDescriptorUuid = UUID.fromString("00002902-0000-1000-8000-00805F9B34FB");
-
-  private int indexFileCounter;
-  private int bytesCount = 0;
-  private int headerCount = 0;
 
   public BluetoothLePlugin() {
 
@@ -4075,8 +4075,6 @@ public class BluetoothLePlugin extends CordovaPlugin {
       if (indexFileCounter < bytesCount) {
           //add header with indexFileCounter
           addProperty(returnObj, "index", headerCount);
-          Log.d("index: ", String.valueOf(headerCount));
-          Log.d("count: ", String.valueOf(indexFileCounter));
           headerCount++;
       } else if (indexFileCounter != 0 && bytesCount != 0 && indexFileCounter == bytesCount) {
           addProperty(returnObj, "index", headerCount);
@@ -4084,10 +4082,7 @@ public class BluetoothLePlugin extends CordovaPlugin {
           indexFileCounter = 0;
           bytesCount = 0;
           headerCount = 0;
-          System.out.println("Stop adding header");
       }
-
-      System.out.println(Arrays.toString(data));
 
       //Return the characteristic value
       PluginResult result = new PluginResult(PluginResult.Status.OK, returnObj);
