@@ -4055,17 +4055,17 @@ public class BluetoothLePlugin extends CordovaPlugin {
       addProperty(returnObj, keyStatus, statusSubscribedResult);
       addPropertyBytes(returnObj, keyValue, data);
 
-        
-
-      //start to add header
+      //start to add header for BLOCK_TRANSFER_START [2, 3, xx, xx, 1, yy, yy, yy, yy]
       if (data[0] == 2 && data[1] == 3) {
           indexFileCounter = 0;
 
+          //calculating length of the 4 yy bytes
           bytesCount |= (data[5] & 0xFF) << 0;
           bytesCount |= (data[6] & 0xFF) << 8;
           bytesCount |= (data[7] & 0xFF) << 16;
           bytesCount |= (data[8] & 0xFF) << 24;
       } else if (bytesCount != 0 && data[0] == 3) {
+          //BLOCK_TRANSFER_DATA starts with 3: [3, 3, xx, xx, data...]
           int packageLength = 0;
           packageLength |= (data[2] & 0xFF) << 0;
           packageLength |= (data[3] & 0xFF) << 8;
@@ -4078,7 +4078,7 @@ public class BluetoothLePlugin extends CordovaPlugin {
           Log.d("index: ", String.valueOf(headerCount));
           Log.d("count: ", String.valueOf(indexFileCounter));
           headerCount++;
-      } else if (indexFileCounter != 0 && bytesCount != 0 &&  indexFileCounter == bytesCount) {
+      } else if (indexFileCounter != 0 && bytesCount != 0 && indexFileCounter == bytesCount) {
           addProperty(returnObj, "index", headerCount);
           addProperty(returnObj, "lastIndex", headerCount);
           indexFileCounter = 0;
