@@ -2594,7 +2594,7 @@ NSString *const operationWrite = @"write";
       return;
     }
 
-    const char* bytes = (const char*)value.bytes;
+    const char* bytes = (const char*)characteristic.value.bytes;
       
      //start to add header for BLOCK_TRANSFER_START [2, 3, xx, xx, 1, yy, yy, yy, yy]
     if (bytes[0] == 2 && bytes[1] == 3) {
