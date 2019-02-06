@@ -1918,10 +1918,16 @@ NSString *const operationWrite = @"write";
   if ([self isNotAddress:address :command]) {
     return;
   }
-
+    
+  NSMutableDictionary* returnObj = [NSMutableDictionary dictionary];
+    
   //If never connected or attempted connected, reconnect can't be used
-  NSMutableDictionary* connection = [self wasNeverConnected:address :command];
+  NSMutableDictionary* connection = [connections objectForKey:address];
   if (connection == nil) {
+    [returnObj setValue:[NSNumber numberWithBool:NO] forKey:keyIsConnected];
+    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:returnObj];
+    [pluginResult setKeepCallbackAsBool:false];
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
     return;
   }
 
@@ -1929,7 +1935,7 @@ NSString *const operationWrite = @"write";
   CBPeripheral* peripheral = [connection objectForKey:keyPeripheral];
 
   //Return whether isConnected or not
-  NSMutableDictionary* returnObj = [NSMutableDictionary dictionary];
+  returnObj = [NSMutableDictionary dictionary];
 
   [self addDevice:peripheral :returnObj];
 

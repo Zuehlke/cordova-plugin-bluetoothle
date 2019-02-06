@@ -1441,6 +1441,7 @@ public class BluetoothLePlugin extends CordovaPlugin {
   }
 
   private void connectAction(JSONArray args, CallbackContext callbackContext) {
+
     if (isNotInitialized(callbackContext, true)) {
       return;
     }
@@ -1482,7 +1483,12 @@ public class BluetoothLePlugin extends CordovaPlugin {
       autoConnect = obj.optBoolean("autoConnect", false);
     }
 
-    BluetoothGatt bluetoothGatt = device.connectGatt(cordova.getActivity().getApplicationContext(), autoConnect, bluetoothGattCallback);
+    BluetoothGatt bluetoothGatt;
+    if (Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+        bluetoothGatt = device.connectGatt(cordova.getActivity().getApplicationContext(), autoConnect, bluetoothGattCallback, BluetoothDevice.TRANSPORT_LE);
+    } else {
+        bluetoothGatt = device.connectGatt(cordova.getActivity().getApplicationContext(), autoConnect, bluetoothGattCallback);
+    }
 
     connection.put(keyPeripheral, bluetoothGatt);
 
@@ -2603,9 +2609,13 @@ public class BluetoothLePlugin extends CordovaPlugin {
       return;
     }
 
-    HashMap<Object, Object> connection = wasNeverConnected(address, callbackContext);
+    JSONObject returnObj = new JSONObject();
+
+    HashMap<Object, Object> connection = connections.get(address);
     if (connection == null) {
-      return;
+        addProperty(returnObj, keyIsConnected, false);
+        callbackContext.success(returnObj);
+        return;
     }
 
     BluetoothGatt bluetoothGatt = (BluetoothGatt) connection.get(keyPeripheral);
@@ -2616,7 +2626,7 @@ public class BluetoothLePlugin extends CordovaPlugin {
 
     BluetoothDevice device = bluetoothGatt.getDevice();
 
-    JSONObject returnObj = new JSONObject();
+    returnObj = new JSONObject();
 
     addProperty(returnObj, keyIsConnected, result);
 
