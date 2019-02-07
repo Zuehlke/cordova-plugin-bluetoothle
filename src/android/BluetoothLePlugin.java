@@ -713,11 +713,11 @@ public class BluetoothLePlugin extends CordovaPlugin {
     settingsBuilder.setConnectable(connectable);
 
     int timeout = obj.optInt("timeout", 1000);
-    if (timeout < 1 || timeout > 180000) {
+    if (timeout < 0 || timeout > 180000) {
       JSONObject returnObj = new JSONObject();
 
       addProperty(returnObj, "error", "startAdvertising");
-      addProperty(returnObj, "message", "Invalid timeout (1 - 180000)");
+      addProperty(returnObj, "message", "Invalid timeout (0 - 180000)");
 
       callbackContext.error(returnObj);
       return;
@@ -1441,6 +1441,7 @@ public class BluetoothLePlugin extends CordovaPlugin {
   }
 
   private void connectAction(JSONArray args, CallbackContext callbackContext) {
+
     if (isNotInitialized(callbackContext, true)) {
       return;
     }
@@ -1482,7 +1483,12 @@ public class BluetoothLePlugin extends CordovaPlugin {
       autoConnect = obj.optBoolean("autoConnect", false);
     }
 
-    BluetoothGatt bluetoothGatt = device.connectGatt(cordova.getActivity().getApplicationContext(), autoConnect, bluetoothGattCallback);
+    BluetoothGatt bluetoothGatt;
+    if (Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+        bluetoothGatt = device.connectGatt(cordova.getActivity().getApplicationContext(), autoConnect, bluetoothGattCallback, BluetoothDevice.TRANSPORT_LE);
+    } else {
+        bluetoothGatt = device.connectGatt(cordova.getActivity().getApplicationContext(), autoConnect, bluetoothGattCallback);
+    }
 
     connection.put(keyPeripheral, bluetoothGatt);
 
@@ -2603,9 +2609,13 @@ public class BluetoothLePlugin extends CordovaPlugin {
       return;
     }
 
-    HashMap<Object, Object> connection = wasNeverConnected(address, callbackContext);
+    JSONObject returnObj = new JSONObject();
+
+    HashMap<Object, Object> connection = connections.get(address);
     if (connection == null) {
-      return;
+        addProperty(returnObj, keyIsConnected, false);
+        callbackContext.success(returnObj);
+        return;
     }
 
     BluetoothGatt bluetoothGatt = (BluetoothGatt) connection.get(keyPeripheral);
@@ -2616,7 +2626,7 @@ public class BluetoothLePlugin extends CordovaPlugin {
 
     BluetoothDevice device = bluetoothGatt.getDevice();
 
-    JSONObject returnObj = new JSONObject();
+    returnObj = new JSONObject();
 
     addProperty(returnObj, keyIsConnected, result);
 
