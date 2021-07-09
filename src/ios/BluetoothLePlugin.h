@@ -19,6 +19,14 @@
   int indexFileCounter;
   int bytesCount;
   int headerCount;
+
+  BOOL writeQIsRunning;
+  int writeQtype;
+  NSInteger writeQLocation;
+  NSInteger writeQLength;
+  NSInteger writeQChunkSize;
+  NSData *writeQData;
+  CBCharacteristic *currentWriteCharacteristic;
 }
 
 - (void)initialize:(CDVInvokedUrlCommand *)command;
@@ -58,6 +66,7 @@
 - (void)requestPermission:(CDVInvokedUrlCommand *)command;
 - (void)isLocationEnabled:(CDVInvokedUrlCommand *)command;
 - (void)requestLocation:(CDVInvokedUrlCommand *)command;
+- (void)retrievePeripheralsByAddress:(CDVInvokedUrlCommand *)command;
 
 - (void)initializePeripheral:(CDVInvokedUrlCommand *)command;
 - (void)addService:(CDVInvokedUrlCommand *)command;
