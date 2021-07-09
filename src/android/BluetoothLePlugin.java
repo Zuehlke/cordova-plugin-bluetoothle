@@ -81,6 +81,10 @@ public class BluetoothLePlugin extends CordovaPlugin {
   //Store bonds
   private HashMap<String, CallbackContext> bonds = new HashMap<String, CallbackContext>();
 
+  private int indexFileCounter;
+  private int bytesCount = 0;
+  private int headerCount = 0;
+
   //Discovery related variables
   private final int STATE_UNDISCOVERED = 0;
   private final int STATE_DISCOVERING = 1;
@@ -4196,15 +4200,47 @@ public class BluetoothLePlugin extends CordovaPlugin {
       }
 
       JSONObject returnObj = new JSONObject();
+      byte[] data = characteristic.getValue();
 
       addDevice(returnObj, device);
 
       addCharacteristic(returnObj, characteristic);
 
       addProperty(returnObj, keyStatus, statusSubscribedResult);
-      addPropertyBytes(returnObj, keyValue, characteristic.getValue());
+      addPropertyBytes(returnObj, keyValue, data);
+
+      //start to add header for BLOCK_TRANSFER_START [2, 3, xx, xx, 1, yy, yy, yy, yy]
+      if (data[0] == 2 && data[1] == 3) {
+          indexFileCounter = 0;
+
+          //calculating length of the 4 yy bytes
+          bytesCount |= (data[5] & 0xFF) << 0;
+          bytesCount |= (data[6] & 0xFF) << 8;
+          bytesCount |= (data[7] & 0xFF) << 16;
+          bytesCount |= (data[8] & 0xFF) << 24;
+      } else if (bytesCount != 0 && data[0] == 3) {
+          //BLOCK_TRANSFER_DATA starts with 3: [3, 3, xx, xx, data...]
+          int packageLength = 0;
+          packageLength |= (data[2] & 0xFF) << 0;
+          packageLength |= (data[3] & 0xFF) << 8;
+          indexFileCounter += packageLength;
+      }
+
+      if (indexFileCounter < bytesCount) {
+          //add header with indexFileCounter
+          addProperty(returnObj, "index", headerCount);
+          headerCount++;
+      } else if (indexFileCounter != 0 && bytesCount != 0 && indexFileCounter == bytesCount) {
+          addProperty(returnObj, "index", headerCount);
+          addProperty(returnObj, "lastIndex", headerCount);
+          indexFileCounter = 0;
+          bytesCount = 0;
+          headerCount = 0;
+      }
 
       //Return the characteristic value
+      PluginResult result = new PluginResult(PluginResult.Status.OK, returnObj);
+      result.setKeepCallback(true);
       callbackContext.sendSequentialResult(returnObj);
     }
 
