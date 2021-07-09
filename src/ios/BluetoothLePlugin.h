@@ -16,6 +16,10 @@
   NSMutableDictionary* requestsHash;
   NSMutableDictionary* servicesHash;
 
+  int indexFileCounter;
+  int bytesCount;
+  int headerCount;
+
   BOOL writeQIsRunning;
   int writeQtype;
   NSInteger writeQLocation;
